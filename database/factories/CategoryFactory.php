@@ -2,7 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Models\Category;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -15,15 +14,10 @@ class CategoryFactory extends Factory
      *
      * @return array<string, mixed>
      */
-    protected $model = Category::class;
-
     public function definition(): array
     {
-        $categoryname = ['Graphics', 'Printer', 'Ethernet', 'Biometrics', 'Software Installation', 'Hardware Maintenance', 'Email Issues', 'Backup and Reformat', 'User Account Management'];
-
         return [
-            //name, office_id,
-            'name' => $this->faker->unique()->randomElement($categoryname),
+            'name' => fake()->unique()->word(),
         ];
     }
 }

@@ -58,9 +58,9 @@ erDiagram
     Request ||--|{ Label: has
     User ||--|{ Assignee: is
     Request ||--|{ Action: has
-    Office ||--|{ User: has
+    Organization ||--|{ User: has
     Category ||--|{ Subcategory: has
-    Office ||--|{ Category: has
+    Organization ||--|{ Category: has
     Category ||--|{ Tag: has
     Subcategory ||--|{ Tag: has
     Subcategory ||--|{ Request: has
@@ -70,30 +70,40 @@ erDiagram
     User ||--|{ Action: responds
     Action ||--|{ Attachment: contains
     Label }|--|| Tag: has
+    Subcategory ||--|{ Template: has
+    Dossier ||--|{ Note: has
+    Dossier ||--|{ Record: has
+    Request ||--|{ Record: has
+
 
 User {
     ulid id pk
-    string number
+    string name
     string email
-    string position
-    string role
     string avatar
-    ulid office_id fk
+    string number
+    string designation
+    string role
+    string purpose
+    string password
+    ulid organization_id fk
 }
 
-Office {
+Organization {
     ulid id pk
     string name
-    string address
-    string building
-    string room
+    string code
     string logo
+    string address
+    string room
+    string building
+    json settings
 }
 
 Category {
     ulid id pk
     string name
-    ulid office_id fk
+    ulid organization_id fk
 }
 
 Subcategory {
@@ -105,31 +115,36 @@ Subcategory {
 Tag {
     ulid id pk
     string name
-    string taggable_type
-    ulid taggable_id fk
+    string color
+    ulid organization_id fk
+    ulidmorphs taggable fk
 }
 
 Request {
     ulid id pk
+    string class
+    string code
+    string subject
+    text body
+    ulid organization_id fk
     ulid category_id fk
     ulid subcategory_id fk
-    ulid requestor_id fk
-    string subject
+    ulid user_id fk
+    ulid from_id fk
     text remarks
     int priority
     int difficulty
-    date target_date
-    time target_time
-    datetime availability_from
-    datetime availability_to
+    datetime availability
 }
 
 Action {
     ulid id pk
     ulid request_id fk
     ulid user_id fk
-    string status
     text remarks
+    string status
+    string resolution
+    string system
     datetime time
 }
 
@@ -138,19 +153,44 @@ Assignee {
     ulid request_id fk
     ulid user_id fk
     ulid assigner_id fk
-    string response
-    datetime responded_at
 }
 
 Attachment {
     ulid id pk
-    string file
-    string attachable_type
-    ulid attachable_id fk
+    json files
+    json paths
+    ulidmorphs attachable fk
+}
+
+Template {
+    ulid id pk
+    string class
+    text content
+    ulid subcategory_id fk
 }
 
 Label {
     ulid id pk
     ulid request_id fk
     ulid tag_id fk
+}
+
+Dossier {
+    ulid id pk
+    ulid organization_id fk
+    ulid user_id fk
+}
+
+Record {
+    ulid id pk
+    ulid dossier_id fk
+    ulid request_id fk
+    ulid user_id fk
+}
+
+Note {
+    ulid id pk
+    text content
+    ulidmorphs notable fk
+    ulid user_id
 }

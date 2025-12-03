@@ -10,17 +10,19 @@ use Livewire\Features\SupportRedirects\Redirector;
 
 class LoginResponse implements Responsable
 {
-    protected User $user;
-
     public function toResponse($request): RedirectResponse|Redirector
     {
-        $this->user = $request->user();
+        /** @var User $user */
+        $user = $request->user();
 
-        $route = match ($this->user->role) {
-            UserRole::ADMIN => 'filament.admin.resources.requests.index',
-            UserRole::USER => 'filament.user.resources.requests.index',
-            UserRole::OFFICER => 'filament.officer.resources.requests.index',
-            UserRole::SUPPORT => 'filament.support.resources.requests.index',
+        $route = match ($user->role) {
+            UserRole::ROOT => 'filament.root.pages.dashboard',
+            UserRole::ADMIN => 'filament.admin.pages.dashboard',
+            UserRole::MODERATOR => 'filament.moderator.pages.dashboard',
+            UserRole::AGENT => 'filament.agent.pages.dashboard',
+            UserRole::USER => 'filament.user.pages.dashboard',
+            UserRole::AUDITOR => 'filament.auditor.pages.dashboard',
+            default => 'filament.home.pages.',
         };
 
         return redirect()->route($route);

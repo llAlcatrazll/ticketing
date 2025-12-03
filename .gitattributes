@@ -9,3 +9,9 @@
 /.github export-ignore
 CHANGELOG.md export-ignore
 .styleci.yml export-ignore
+
+*.sh text eol=lf
+
+*.log export-ignore
+*.tmp export-ignore
+*.swp export-ignore

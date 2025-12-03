@@ -2,10 +2,17 @@
 
 namespace App\Filament\Actions\Tables;
 
-use App\Filament\Actions\Traits\UpdateRequestTraits;
-use Filament\Tables\Actions\Action;
+use App\Filament\Actions\Concerns\UpdateRequest;
+use Filament\Tables\Actions\EditAction;
 
-class UpdateRequestAction extends Action
+class UpdateRequestAction extends EditAction
 {
-    use UpdateRequestTraits;
+    use UpdateRequest;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->bootUpdateRequest();
+    }
 }

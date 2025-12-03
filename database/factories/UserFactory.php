@@ -2,8 +2,9 @@
 
 namespace Database\Factories;
 
-use App\Models\User;
+use App\Enums\UserRole;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /**
@@ -16,8 +17,6 @@ class UserFactory extends Factory
      */
     protected static ?string $password;
 
-    protected $model = User::class;
-
     /**
      * Define the model's default state.
      *
@@ -25,18 +24,63 @@ class UserFactory extends Factory
      */
     public function definition(): array
     {
-        $roles = ['admin', 'user', 'support', 'officer'];
-        $positions = ['PGO-Executivew', 'SP-Legislation', 'SP-Secretariat', 'PGO-Administrative', 'Executive', 'Administrator', 'Chairman'];
-
         return [
-            'name' => $this->faker->unique()->name,
-            'email' => $this->faker->unique()->safeEmail(),
-            'password' => bcrypt(value: 'password'),
-            'role' => $this->faker->randomElement($roles),
-            'number' => $this->faker->phoneNumber(),
-            'email_verified_at' => now(),
+            'name' => fake()->name(),
+            'email' => fake()->unique()->safeEmail(),
+            'designation' => fake()->jobTitle(),
+            'role' => fake()->randomElement(array_filter(UserRole::cases(), fn ($role) => $role !== UserRole::ROOT)),
+            'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
-            'position' => $this->faker->randomElement($positions),
+            'verified_at' => $verified = fake()->boolean(60) ? now() : null,
+            'approved_at' => $approved = $verified ? (fake()->boolean(60) ? $verified : null) : null,
+            'deactivated_at' => $approved ? (fake()->boolean(15) ? $verified : null) : null,
         ];
+    }
+
+    /**
+     * Default root user account.
+     */
+    public function root(): static
+    {
+        return $this->state(fn () => [
+            'name' => 'Root',
+            'email' => 'root@local.dev',
+            'role' => UserRole::ROOT,
+            'verified_at' => 1,
+            'approved_at' => 1,
+            'password' => '$2y$12$.jM7SD37qQAvDhmCHz414uToHIWwl9129xyMTgbDXlT8/KvKfXxU.',
+            'remember_token' => null,
+            'deactivated_at' => null,
+        ]);
+    }
+
+    public function admin(): static
+    {
+        return $this->state(fn () => [
+            'role' => UserRole::ADMIN,
+            'verified_at' => 1,
+            'approved_at' => 1,
+            'deactivated_at' => null,
+        ]);
+    }
+
+    public function moderator(): static
+    {
+        return $this->state(fn () => [
+            'role' => UserRole::MODERATOR,
+            'verified_at' => 1,
+            'approved_at' => 1,
+            'deactivated_at' => null,
+        ]);
+    }
+
+    public function user(): static
+    {
+        return $this->state(fn () => [
+            'role' => UserRole::USER,
+            'verified_at' => 1,
+            'approved_at' => 1,
+            'deactivated_at' => null,
+        ]);
     }
 }

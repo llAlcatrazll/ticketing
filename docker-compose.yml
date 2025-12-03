@@ -1,60 +1,83 @@
 services:
-    ticketing:
-        container_name: ticketing.app
-        build:
-            context: ./vendor/laravel/sail/runtimes/8.3
-            dockerfile: Dockerfile
-            args:
-                WWWGROUP: '${WWWGROUP}'
-        image: sail-8.3/app
-        extra_hosts:
-            - 'host.docker.internal:host-gateway'
-        ports:
-            - '${APP_PORT:-80}:80'
-            - '${VITE_PORT:-5173}:${VITE_PORT:-5173}'
-        environment:
-            WWWUSER: '${WWWUSER}'
-            LARAVEL_SAIL: 1
-            XDEBUG_MODE: '${SAIL_XDEBUG_MODE:-off}'
-            XDEBUG_CONFIG: '${SAIL_XDEBUG_CONFIG:-client_host=host.docker.internal}'
-            IGNITION_LOCAL_SITES_PATH: '${PWD}'
-        volumes:
-            - '.:/var/www/html'
-        networks:
-            - ticketing
-        depends_on:
-            - pgsql
-    pgsql:
-        container_name: ticketing.database
-        image: 'postgres:15'
-        ports:
-            - '${FORWARD_DB_PORT:-5432}:5432'
-        environment:
-            PGPASSWORD: '${DB_PASSWORD:-secret}'
-            POSTGRES_DB: '${DB_DATABASE}'
-            POSTGRES_USER: '${DB_USERNAME}'
-            POSTGRES_PASSWORD: '${DB_PASSWORD:-secret}'
-        volumes:
-            - 'ticketing-pgsql:/var/lib/postgresql/data'
-            - './vendor/laravel/sail/database/pgsql/create-testing-database.sql:/docker-entrypoint-initdb.d/10-create-testing-database.sql'
-        networks:
-            - ticketing
-        healthcheck:
-            test:
-                - CMD
-                - pg_isready
-                - '-q'
-                - '-d'
-                - '${DB_DATABASE}'
-                - '-U'
-                - '${DB_USERNAME}'
-            retries: 3
-            timeout: 5s
+  helpdesk:
+    build:
+      context: ./docker
+      dockerfile: Dockerfile
+      args:
+        WWWGROUP: '${WWWGROUP}'
+    image: sail-8.4/app
+    container_name: helpdesk.app
+    restart: unless-stopped
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    ports:
+      - '${APP_PORT:-80}:${APP_PORT:-80}'
+      - '${VITE_PORT:-5173}:${VITE_PORT:-5173}'
+      - '${VITE_FORWARD_REVERB_PORT:-8080}:8080'
+    environment:
+      WWWUSER: '${WWWUSER}'
+      LARAVEL_SAIL: 1
+      XDEBUG_MODE: '${SAIL_XDEBUG_MODE:-off}'
+      XDEBUG_CONFIG: '${SAIL_XDEBUG_CONFIG:-client_host=host.docker.internal}'
+      IGNITION_LOCAL_SITES_PATH: '${PWD}'
+      SUPERVISOR_PHP_COMMAND: '${SUPERVISOR_PHP_COMMAND:-/usr/bin/php -d variables_order=EGPCS /var/www/html/artisan octane:start --watch --host=0.0.0.0 --port=${APP_PORT:-80}}'
+    volumes:
+      - '.:/var/www/html'
+    networks:
+      - helpdesk
+    depends_on:
+      - mysql
+  mysql:
+    image: 'mysql/mysql-server:8.0'
+    container_name: helpdesk.database
+    restart: unless-stopped
+    ports:
+      - '${FORWARD_DB_PORT:-3306}:3306'
+    environment:
+      MYSQL_ROOT_PASSWORD: '${DB_PASSWORD}'
+      MYSQL_ROOT_HOST: '%'
+      MYSQL_DATABASE: '${DB_DATABASE}'
+      MYSQL_USER: '${DB_USERNAME}'
+      MYSQL_PASSWORD: '${DB_PASSWORD}'
+      MYSQL_ALLOW_EMPTY_PASSWORD: 1
+    volumes:
+      - 'helpdesk-database:/var/lib/mysql'
+      - './vendor/laravel/sail/database/mysql/create-testing-database.sh:/docker-entrypoint-initdb.d/10-create-testing-database.sh'
+    networks:
+      - helpdesk
+    healthcheck:
+      test:
+        - CMD
+        - mysqladmin
+        - ping
+        - '-p${DB_PASSWORD}'
+      retries: 3
+      timeout: 5s
+  clamav:
+    image: clamav/clamav:latest
+    restart: unless-stopped
+    container_name: helpdesk.antivirus
+    networks:
+      - helpdesk
+  mailpit:
+    image: 'axllent/mailpit:latest'
+    container_name: helpdesk.testmail
+    ports:
+      - '${FORWARD_MAILPIT_PORT:-1025}:1025'
+      - '${FORWARD_MAILPIT_DASHBOARD_PORT:-8025}:8025'
+    environment:
+      APP_ENV: '${APP_ENV:-production}'
+    entrypoint:
+      - sh
+      - '-c'
+      - "if [ \"$APP_ENV\" != \"production\" ]; then\n    exec /mailpit\nelse\n    exit 0\nfi\n"
+    networks:
+      - helpdesk
 networks:
-    ticketing:
-        name: ticketing
-        driver: bridge
+  helpdesk:
+    name: helpdesk
+    driver: bridge
 volumes:
-    ticketing-pgsql:
-        name: ticketing.database
-        driver: local
+  helpdesk-database:
+    name: helpdesk.database
+    driver: local

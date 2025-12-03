@@ -1,23 +1,20 @@
 <?php
 
-use App\Models\Request;
+use App\Http\Controllers\AttachmentController;
+use App\Models\Feedback;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "web" middleware group. Make something great!
-|
-*/
+Route::get('test', fn (Request $request) => $request->expectsJson() ? response()->json('Hello World') : 'Hello World');
 
-Route::get('/test', function () {
+Route::get('attachments/{attachment}/{name}', AttachmentController::class)->name('file.attachment')->where('name', '.*');
 
-    // return response()->file();
-    return function (Request $record) {
-        dd($record->attachment);
-    };
+Route::get('/feedback/form/print/{record}', function ($recordId) {
+    $record = \App\Models\Feedback::findOrFail($recordId);
+    return view('filament.panels.feedback.feedback-form', ['record' => $record, 'preview' => true]);
+})->name('feedback.form.print');
+
+Route::get('feedbackform', function(){
+    $record = Feedback::first();
+    return view('filament.panels.feedback.feedback-form', ['record' => $record]);
 });

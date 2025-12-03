@@ -11,10 +11,7 @@ class Label extends Pivot
 {
     use HasFactory, HasUlids;
 
-    protected $fillable = [
-        'request_id',
-        'tag_id',
-    ];
+    protected $table = 'labels';
 
     public function request(): BelongsTo
     {
